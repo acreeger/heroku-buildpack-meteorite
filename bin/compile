@@ -74,8 +74,11 @@ function resolve_version() {
 }
 
 function package_engine_version() {
+  #TODO: Can we default to a variable to load a different version of node?
+  # version=$METEORITE_NODE_VERSION
+  # if [ -n "$version" ]; then
   version=$(cat $BUILD_DIR/package.json | $bootstrap_node/bin/node $LP_DIR/vendor/json/json engines.$1 2>/dev/null)
-  if [ $? == 0 ]; then
+  if [ $? == 0 ] && [ -n "$METEORITE_NODE_VERSION" ]; then
     echo $version | sed -e 's/\([<>=]\) /\1/g'
   fi
 }
@@ -109,7 +112,7 @@ declare -A engine_versions
 declare -A engine_defaults
 declare -A engine_requests
 
-engine_defaults["node"]="0.8.19"
+engine_defaults["node"]="0.8.24"
 engine_versions["node"]=$(manifest_versions "nodejs")
 engine_requests["node"]=$(package_engine_version "node")
 
@@ -166,7 +169,7 @@ echo "-----> Installing meteorite with npm"
 run_npm "install meteorite -g"
 echo "Meteorite installed" | indent
 
-METEOR_BUILD_DIR="$BUILD_DIR/.meteor/heroku_build"
+METEOR_BUILD_DIR="$METEOR_BUILD_DIR/.meteor/heroku_build"
 mkdir -p "$HOME"
 ############################################
 # install meteor + packages through mrt
@@ -183,7 +186,8 @@ echo "Meteor installed" | indent
 echo "Installing packages" | indent
 HOME="$BUILD_DIR" mrt install | indent
 echo "Building meteor bundle" | indent
-HOME="$VENDORED_METEOR" "$VENDORED_METEOR"/.meteor/meteor bundle "$CACHE_DIR"/bundle.tar.gz 2>&1 | indent
+# HOME="$VENDORED_METEOR" "$VENDORED_METEOR"/.meteor/meteor bundle "$CACHE_DIR"/bundle.tar.gz 2>&1 | indent
+HOME="$VENDORED_METEOR" mrt bundle "$CACHE_DIR"/bundle.tar.gz 2>&1 | indent
 
 mkdir -p "$METEOR_BUILD_DIR"/app
 tar -zxf "$CACHE_DIR"/bundle.tar.gz --strip-components 1 -C "$METEOR_BUILD_DIR"/app
